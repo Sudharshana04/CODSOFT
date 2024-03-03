@@ -1,0 +1,70 @@
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.impute import SimpleImputer
+
+
+fraud_train = pd.read_csv('fraudTrain.csv')
+
+
+fraud_test = pd.read_csv('fraudTest.csv')
+
+
+df = pd.concat([fraud_train, fraud_test])
+
+
+df = df.select_dtypes(include=[int, float])
+
+
+X = df.drop('is_fraud', axis=1)  # Features
+y = df['is_fraud']  # Target variable
+
+
+imputer = SimpleImputer(strategy='mean')
+X_imputed = imputer.fit_transform(X)
+
+
+df_cleaned = df.dropna(subset=['is_fraud'])
+
+
+X_cleaned = df_cleaned.drop('is_fraud', axis=1)
+y_cleaned = df_cleaned['is_fraud']
+
+X_train, X_test, y_train, y_test = train_test_split(X_cleaned, y_cleaned, test_size=0.2, random_state=42)
+
+
+clf = RandomForestClassifier(random_state=42)
+
+
+clf.fit(X_train, y_train)
+
+
+y_pred = clf.predict(X_test)
+
+
+conf_matrix = confusion_matrix(y_test, y_pred)
+
+
+fraudulent_transactions = df_cleaned[df_cleaned['is_fraud'] == 1]
+legitimate_transactions = df_cleaned[df_cleaned['is_fraud'] == 0]
+
+
+total_legitimate = len(legitimate_transactions)
+total_fraudulent = len(fraudulent_transactions)
+
+true_legitimate = conf_matrix[0, 0]
+false_legitimate = conf_matrix[1, 0]
+true_fraudulent = conf_matrix[1, 1]
+false_fraudulent = conf_matrix[0, 1]
+
+
+print("Total Legitimate Transactions:", total_legitimate)
+print("Total Fraudulent Transactions:", total_fraudulent)
+print("\nTrue Legitimate Transactions:", true_legitimate)
+print("False Legitimate Transactions:", false_legitimate)
+print("\nTrue Fraudulent Transactions:", true_fraudulent)
+print("False Fraudulent Transactions:", false_fraudulent)

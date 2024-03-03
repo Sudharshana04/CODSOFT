@@ -1,0 +1,66 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+
+
+df = pd.read_csv('Churn_Modelling.csv')
+
+
+df = df.drop(['RowNumber', 'CustomerId', 'Surname'], axis=1)
+
+
+median_credit_score = df['CreditScore'].median()
+df['CreditScore'] = pd.to_numeric(df['CreditScore'].replace("P'an", median_credit_score, regex=True), errors='coerce').fillna(median_credit_score)
+
+
+X = df.drop('Exited', axis=1)
+y = df['Exited']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+numeric_features = ['CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary']
+categorical_features = ['Geography', 'Gender']
+
+numeric_transformer = StandardScaler()
+categorical_transformer = OneHotEncoder(drop='first')
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numeric_transformer, numeric_features),
+        ('cat', categorical_transformer, categorical_features)
+    ])
+
+pipeline = Pipeline([
+    ('preprocessor', preprocessor),
+    ('model', RandomForestClassifier(random_state=42))
+])
+
+pipeline.fit(X_train, y_train)
+
+
+y_pred = pipeline.predict(X_test)
+
+
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+classification_rep = classification_report(y_test, y_pred)
+
+
+print("Random Forest Classifier:")
+print(f"Accuracy: {accuracy:.2f}")
+print(f"Confusion Matrix:\n{conf_matrix}")
+print(f"Classification Report:\n{classification_rep}")
+
+
+churn_rate = df['Exited'].value_counts(normalize=True) * 100
+churn_rate.plot(kind='bar', color=['skyblue', 'salmon'])
+plt.title('Churn Rate')
+plt.xlabel('Exited')
+plt.ylabel('Percentage')
+plt.xticks(rotation=0)
+plt.show()
